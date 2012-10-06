@@ -179,12 +179,16 @@ class Alignment
       self.update_alignment_sequence
     end
     seq = Sequence.get(self.seq_id)
-    fasta_string = ">"+seq.abrev_name+"|"+seq.seq_name+"|"+seq.seq_type+"|"+seq.seq_accession+"|"+extra_string+"\n" + self.alignment_sequence+"\n"
+    fasta_string = ">"+seq.abrev_name+" | "+seq.seq_name+"|"+seq.seq_type+"|"+seq.seq_accession+"|"+extra_string+"\n" + self.alignment_sequence+"\n"
   end
   
-  def generate_fasta_alignment_file_for_all
+  def generate_fasta_alignment_file_for_all(filename="")
     alignments = Alignment.all(:alignment_name=> self.alignment_name)
-    filepath = "temp_data/"+self.alignment_name+"_alignment"+Time.now.to_i.to_s+".fasta"
+    if filename.empty?
+      filepath = "temp_data/"+self.alignment_name+"_alignment"+Time.now.to_i.to_s+".fasta"
+    else
+      filepath = "temp_data/#{filename}"
+    end
     f = File.new(filepath, "w+")
     alignments.each do |alignment|
       f.write(alignment.fasta_alignment_string)

@@ -25,7 +25,7 @@ class SequencesController < ApplicationController
   # GET /sequences/new.xml
   def new
     @sequence = Sequence.new
-    @seq_types = {:N=>"N", :L=>"L", :P => "P"}
+    @seq_types = {:N=>"N", :L=>"L", :P => "P", "P Cut" => "P Cut"}
     @sequences = Hash.new
     Sequence.all(:fields => [:seq_name], :unique => true, :order => [:seq_name.asc]).each{|s| @sequences = @sequences.merge({s.seq_name => s.seq_name})}
     respond_to do |format|

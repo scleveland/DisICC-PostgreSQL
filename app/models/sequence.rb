@@ -16,6 +16,48 @@ class Sequence
   #has n, :a_asequences
   #has n, :disorder
   
+  def generate_aasequences
+    (0..self.sequence.length-1).each do |i|
+      AAsequence.create(:seq_id=> self.seq_id,
+                       :amino_acid=>self.sequence[i],
+                       :original_position=>i)
+    end
+  end
+  
+  
+  def run_and_store_disorder
+    begin
+      self.generate_iupred_disorder_short
+    rescue Exception => e  
+      puts self.abrev_name + " IUPRED short failed!"
+      puts e.message
+    end
+    begin
+      self.generate_iupred_disorder
+    rescue Exception => e  
+      puts self.abrev_name + " IUPRED long failed!"
+      puts e.message
+    end
+    begin
+      self.generate_ronn
+    rescue Exception => e  
+      puts self.abrev_name + " RONN failed!"
+      puts e.message
+    end
+    begin
+      self.generate_pondr_fit
+    rescue Exception => e  
+      puts self.abrev_name + " PONDRFit failed!"
+      puts e.message
+    end
+    begin
+      self.generate_disembl
+    rescue Exception => e  
+      puts self.abrev_name + " DisEMBL failed!"
+      puts e.message
+    end
+  end
+  
   def generate_fasta_file
     filepath = "temp_data/"+self.abrev_name+"_"+self.seq_type+".fasta"
     f = File.new(filepath, "w+")
@@ -108,7 +150,7 @@ class Sequence
     end
   end
   
-  def self.calculate_disorder_consensus_for_all(ptype, disorder_types)
+  def self.calculate_disorder_consensus_for_types(ptype, disorder_types)
     Sequence.all(:seq_type=>ptype).each do |seq|
       seq.calculate_disorder_consensus(disorder_types)
     end
@@ -119,7 +161,8 @@ class Sequence
      cur = Curl::Easy.new(url)
      post_params= "sequence=#{'>'+self.abrev_name}\r\n#{self.sequence}&display_probs=y"
      cur.http_post(post_params)
-     #puts post_params
+     puts post_params
+     puts cur.body_str.to_s
      s =cur.body_str.to_s.split('<pre>')
      a = s[2].split("</pre>")
      filepath= "temp_data/#{self.abrev_name}_RONN"
@@ -171,6 +214,7 @@ class Sequence
      post_params= "PONDRFIT=yes&native_sequence=#{'>'+self.abrev_name}\r\n#{self.sequence}&fontsize=small&plotwidth=7&xticincrement=100&plotheight=auto&filetype=eps&legend=full"
      cur.http_post(post_params)
      puts post_params
+     puts cur.body_str.to_s
      s =cur.body_str.to_s.split('IUPRED SHORT DATA</a><br><a href=')
      f = s[1].split(">PONDR-FIT DATA")
      a = f[0].to_s.gsub('"','')
@@ -368,7 +412,7 @@ class Sequence
     end
   end
   
-  def self.generate_all_sequence_disorder_consensus_javliew_annotation(ptype)
+  def self.generate_all_sequence_disorder_consensus_javliew_annotation(ptype,abrev_name=true)
     require 'csv'
     CSV.open("temp_data/jalview_#{ptype}_#{Time.now}.gff", "wb", {:col_sep => "\t"}) do |csv|
       csv <<["possible disorder","ffffcc"]
@@ -395,8 +439,11 @@ class Sequence
           else
             feature_type = "no disorder"
           end
-          unless seq.alternate_name.nil?          
+          if abrev_name
+            csv << ["None", "#{seq.abrev_name}", -1, "#{aa.original_position}", "#{aa.original_position}", "#{feature_type}"]
+          else          
             csv << ["None", "#{seq.alternate_name.split('/')[0]}", -1, "#{aa.original_position}", "#{aa.original_position}", "#{feature_type}"]
+          
           end
         end
       end
@@ -449,6 +496,13 @@ class Sequence
    return jalview_string
   end
   
- 
+  def set_aasequence_defaults
+      sql="UPDATE a_asequences SET disorder_consensus =0.0 WHERE seq_id=#{self.seq_id}"
+      repository.adapter.execute(sql)
+      sql="UPDATE a_asequences SET contact_consensus =0.0 WHERE seq_id=#{self.seq_id}"
+      repository.adapter.execute(sql)
+      sql="UPDATE a_asequences SET contact_positive_consensus =0.0 WHERE seq_id=#{self.seq_id}"
+      repository.adapter.execute(sql)
+  end
 end
 

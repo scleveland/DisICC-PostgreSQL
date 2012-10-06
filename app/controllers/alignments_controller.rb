@@ -25,7 +25,7 @@ class AlignmentsController < ApplicationController
   # GET /alignments/new.xml
   def new
     @alignment = Alignment.new
-    @seq_types = {:N=>"N", :L=>"L", :P => "P"}
+    @seq_types = {:N=>"N", :L=>"L", :P => "P", "P Cut"=> "P Cut"}
     respond_to do |format|
       format.html # new.html.erb
       format.xml  { render :xml => @alignment }
@@ -131,7 +131,9 @@ class AlignmentsController < ApplicationController
     @new_file = File.join(directory,@name)
     @alignment_name = params[:alignment_name]
     @seq_type = params[:seq_type]
-    sequences = Sequence.all(:seq_type => @seq_type)
+  
+      sequences = Sequence.all(:seq_type => @seq_type)
+    
     @seq_options = Hash.new
     sequences.map{|k| @seq_options = @seq_options.merge({k.seq_name => k.seq_id.to_s})}
     File.open(@new_file, "wb"){ |f| f.write(params['datafile'].read)}
@@ -365,7 +367,7 @@ class AlignmentsController < ApplicationController
         @alignment_color_array = Array.new      
         @cur_position = 0   
         AlignmentPosition.all(:alignment_id => alignment.align_id, 
-                     :order => [:alignmnet_position_id.asc]).each do |position|
+                     :order => [:alignment_position_id.asc]).each do |position|
          if position.position == @cur_position
             @amino_acid = AAsequence.first(:AAsequence_id => position.aasequence_id)
             @alignment_color_array[@cur_position] = residue_color(@amino_acid.disorder_consensus, 0)
@@ -446,7 +448,7 @@ class AlignmentsController < ApplicationController
        @alignment_color_array = Array.new      
        @cur_position = 0   
        AlignmentPosition.all(:alignment_id => alignment.align_id, 
-                    :order => [:alignmnet_position_id.asc]).each do |position|
+                    :order => [:alignment_position_id.asc]).each do |position|
         if position.position == @cur_position
            @amino_acid = AAsequence.first(:AAsequence_id => position.aasequence_id)
            @alignment_color_array[@cur_position] = residue_color(@amino_acid.disorder_consensus, @amino_acid.contact_consensus)
@@ -527,7 +529,7 @@ class AlignmentsController < ApplicationController
        @alignment_color_array = Array.new      
        @cur_position = 0   
        AlignmentPosition.all(:alignment_id => alignment.align_id, 
-                    :order => [:alignmnet_position_id.asc]).each do |position|
+                    :order => [:alignment_position_id.asc]).each do |position|
         if position.position == @cur_position
            @amino_acid = AAsequence.first(:AAsequence_id => position.aasequence_id)
            @cap_res = Caps.first(:aasequence_id => @amino_acid.AAsequence_id)
